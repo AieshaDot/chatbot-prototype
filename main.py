@@ -8,6 +8,7 @@ from pydantic import BaseModel
 import openai
 from dotenv import load_dotenv
 import asyncio
+import markdown2
 
 # Load environment variables
 load_dotenv()
@@ -49,6 +50,12 @@ async def stream_openai_response(messages):
             async for chunk in response:
                 if chunk.choices[0].delta.content:
                     yield chunk.choices[0].delta.content
+                    delta = chunk.choices[0].delta.content
+                    if delta:
+                        html_chunk = markdown2.markdown(delta)
+                        # Remove newlines so SSE formatting isn't broken
+                        cleaned = html_chunk.replace("\n", "")
+                        yield f"data: {cleaned}\n\n"
                     await asyncio.sleep(0.01)
         return generate()
     except Exception as e:
@@ -58,7 +65,7 @@ async def stream_openai_response(messages):
 
 # Chat endpoint (streaming)
 from fastapi.responses import StreamingResponse
-@app.post("/chat/", response_class=StreamingResponse)
+@app.post("/chat", response_class=StreamingResponse)
 async def chat(request: MessageRequest):
     messages = [
         {"role": "system", "content": "You are a helpful assistant named Chereena that answers ITSMF questions. Use line breaks, numbered lists, or bullet points if applicable. Format your responses using markdown-like structure."},
@@ -89,4 +96,14 @@ async def serve_new_chat(request: Request):
 # Serve the chatbot homepage
 @app.get("/", response_class=HTMLResponse)
 async def serve_home(request: Request):
+    return templates.TemplateResponse("C_LM_Home.html", {"request": request})
+
+# ✅ Route for privacy policy
+@app.get("/privacy-policy", response_class=HTMLResponse)
+async def privacy_policy(request: Request):
+    return templates.TemplateResponse("privacy_policy.html", {"request": request})
+
+# Routes
+@app.get("/")
+async def home(request: Request):
     return templates.TemplateResponse("C_LM_Home.html", {"request": request})

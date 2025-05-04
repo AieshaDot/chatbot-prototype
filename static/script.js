@@ -1,107 +1,156 @@
-// function typewriterEffect(element, text, speed = 15) {
-//   let index = 0;
-//   function type() {
-//     if (index < text.length) {
-//       element.textContent += text.charAt(index);
-//       element.scrollIntoView({ behavior: "smooth", block: "end" });
-//       index++;
-//       setTimeout(type, speed);
-//     }
-//   }
-//   type();
-// }
+let botMarkdownBuffer = "";
+let typingIndex = 0;
+let typingTimer = null;
 
+document.addEventListener("DOMContentLoaded", function () {
+  const chatInput = document.getElementById("chatInput");
+  const submitBtn = document.getElementById("submitBtn");
 
-function typewriterEffect(element, text, speed = 15) {
-  let index = 0;
-  let plainText = text.replace(/<br>/g, '\n'); // Avoid breaking HTML
-
-  function type() {
-    if (index < plainText.length) {
-      element.textContent += plainText.charAt(index);
-      element.scrollIntoView({ behavior: "smooth", block: "end" });
-      index++;
-      setTimeout(type, speed);
+  // Enter key submits message
+  chatInput.addEventListener("keydown", function (event) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      sendMessage();
     }
+  });
+
+  // Submit button
+  submitBtn.addEventListener("click", function () {
+    sendMessage();
+  });
+
+  // Canned questions
+  document.querySelectorAll(".question").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      chatInput.value = btn.textContent;
+      sendMessage();
+    });
+  });
+
+  // Clear chat
+  const clearBtn = document.getElementById("clearChat");
+  if (clearBtn) {
+    clearBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      const chatWindow = document.getElementById("chatWindow");
+      chatWindow.innerHTML = "";
+    });
   }
-
-  type();
-}
-
+});
 
 async function sendMessage() {
-  const input = document.getElementById("chatInput");
-  const chatWindow = document.getElementById("chatWindow");
-  const message = input.value.trim();
+  const inputField = document.getElementById("chatInput");
+  const message = inputField.value.trim();
   if (!message) return;
 
-  // Show user message
-  const userMsg = document.createElement("div");
-  userMsg.className = "message user";
-  userMsg.textContent = message;
-  chatWindow.appendChild(userMsg);
-
-  // Bot placeholder
-  const botMsg = document.createElement("div");
-  botMsg.className = "message bot";
-  botMsg.textContent = "Thinking...";
-  chatWindow.appendChild(botMsg);
-  chatWindow.scrollTop = chatWindow.scrollHeight;
-
-  input.value = "";
-
-  // === Base URL auto detect ===
-  const baseURL = window.location.origin.includes("localhost") || window.location.origin.includes("127.0.0.1")
-    ? "http://127.0.0.1:8000"
-    : window.location.origin;
+  appendMessage("user", message);
+  scrollToBottom(); 
+  document.getElementById("typingIndicator").style.display = "block";
+  inputField.value = "";
+  botMarkdownBuffer = "";
+  typingIndex = 0;
+  
 
   try {
-    const res = await fetch(`${baseURL}/chat/`, {
+    const response = await fetch("/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message }),
     });
 
-    if (!res.ok) throw new Error("Server returned: " + res.status);
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder("utf-8");
-    let finalText = "";
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value, { stream: true });
-      finalText += chunk;
-      // botMsg.textContent = finalText;
-      botMsg.innerHTML = finalText.replace(/\n/g, "<br>");
-      chatWindow.scrollTop = chatWindow.scrollHeight;
+    if (!response.ok || !response.body) {
+      throw new Error("Network response was not ok.");
     }
 
-    //botMsg.textContent = ""; // reset
-    //typewriterEffect(botMsg, finalText);
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let chunk;
 
-  } catch (err) {
-    botMsg.textContent = "⚠️ Error: " + err.message;
-    console.error("Chat fetch error:", err);
+    // Clear previous bot message placeholder
+    createBotMessagePlaceholder();
+
+    while (!(chunk = await reader.read()).done) {
+      const text = decoder.decode(chunk.value, { stream: true });
+      botMarkdownBuffer += text;
+      restartTyping();
+    }
+  } catch (error) {
+    console.error("Streaming fetch failed:", error);
+    appendMessage("bot", "⚠️ Oops! Something went wrong.");
+  }
+}
+
+function appendMessage(sender, text) {
+  const chatWindow = document.getElementById("chatWindow");
+  const messageElem = document.createElement("div");
+  messageElem.classList.add("message", sender);
+
+  if (sender === "bot") {
+    messageElem.innerHTML = text;
+  } else {
+    messageElem.textContent = text;
   }
 
+  chatWindow.appendChild(messageElem);
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
+function createBotMessagePlaceholder() {
+  let existing = document.querySelector(".message.bot:last-of-type");
+  if (!existing) {
+    const chatWindow = document.getElementById("chatWindow");
+    const messageElem = document.createElement("div");
+    messageElem.classList.add("message", "bot");
+    messageElem.innerHTML = "";
+    chatWindow.appendChild(messageElem);
+  }
+}
 
-document.querySelectorAll('.question').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.getElementById('chatInput').value = btn.textContent;
-    sendMessage();
-  });
-});
+function restartTyping() {
+  if (typingTimer) clearTimeout(typingTimer);
+  typeNextChunk();
+  scrollToBottom();
+  document.getElementById("typingIndicator").style.display = "none";
+}
 
-document.getElementById("clearChat").addEventListener("click", function (e) {
-  e.preventDefault();
-  const chatWindow = document.getElementById("chatWindow");
-  if (chatWindow) {
-    chatWindow.innerHTML = ""; // Clear all messages
+function typeNextChunk() {
+  const botBubble = document.querySelector(".message.bot:last-of-type");
+  if (!botBubble) return;
+
+  if (typingIndex <= botMarkdownBuffer.length) {
+    const currentText = botMarkdownBuffer.slice(0, typingIndex);
+    botBubble.innerHTML = marked.parse(currentText);
+    botBubble.scrollTop = botBubble.scrollHeight;
+
+    typingIndex++;
+    typingTimer = setTimeout(typeNextChunk, 15); // ⏱️ Adjust typing speed here
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const main = document.querySelector('.home-wrapper .main');
+  if (main) {
+    main.style.marginLeft = '240px';
   }
 });
+
+window.addEventListener("load", () => {
+  document.body.classList.add("ready");
+});
+
+function enforceMainLayout() {
+  const main = document.querySelector('.home-wrapper .main');
+  if (main && main.style.marginLeft !== '240px') {
+    main.style.marginLeft = '240px';
+  }
+}
+
+window.addEventListener('load', enforceMainLayout);
+window.addEventListener('resize', enforceMainLayout);
+
+function scrollToBottom() {
+  const chatWindow = document.getElementById("chatWindow");
+  if (chatWindow) {
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+}
