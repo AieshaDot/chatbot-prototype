@@ -11,3 +11,4 @@ langchain-community
 langchain-core
 langchain-text-splitters
 langchain-chroma
+markdown2
