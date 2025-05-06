@@ -6,6 +6,7 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Chereena Chatbot</title>
 <link href="../static/style.css" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
   .home-wrapper {
@@ -14,7 +15,7 @@
 </style>
 </head>
 <body class="home-wrapper">
-
+  <button id="hamburger" class="hamburger-btn" aria-label="Toggle menu">☰</button>
 <script>
 function toggleDarkMode() {
   const body = document.body;
@@ -93,7 +94,6 @@ function toggleDarkMode() {
   });
 </script>
 <script src="../static/script.js"></script>
-
 <!-- Modal container (place this just before </body>) -->
 <div class="modal" id="imageModal">
 <div class="modal-content-wrapper">
@@ -101,9 +101,10 @@ function toggleDarkMode() {
 <img alt="Emerge Cohort 2025" class="modal-image" src="../static/images/EmergeWG22025.jpeg"/>
 </div>
 </div>
-<div class="app-wrapper">
 <div class="sidebar">
+  <!-- <div class="sidebar-top"> -->
 <button class="new-chat" onclick="window.location.href='/new_chat'">📝 New Chat</button>
+<!-- </div> -->
 <div class="sidebar-bottom">
 <img alt="ITSMF logo" id="itsmfLogo" src="../static/images/itsmf_technology_logo.png" style="width: 213px; height: 32px;"/>
 <hr style="border: none; border-top: 1px solid #ddd; margin: 10px 0;"/>
@@ -122,14 +123,20 @@ function toggleDarkMode() {
 </div>
 </div>
 <div class="main">
-<div class="topbar">
-<span class="logo">Chereena 2.0 ⌄</span>
-<img alt="ITSMF Logo" src="../static/images/ITSMF_Logo_Icon_Color.png"/>
-<div class="auth-buttons">
-<button>Login</button>
-<button>Sign Up</button>
-</div>
-</div>
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="logo">Chereena 2.0</span>
+    </div>
+  
+    <div class="topbar-center">
+      <img class="itsmf-header-logo" src="../static/images/ITSMF_Logo_Icon_Color.png" alt="ITSMF Logo" />
+    </div>
+  
+    <div class="topbar-right auth-buttons">
+      <button>Login</button>
+      <button>Sign Up</button>
+    </div>
+  </div>
 <div class="header">
   <div class="profile-header">
   <img alt="Chereena" src="../static/images/Chereena Profile Picture Ai.png"/>
@@ -173,5 +180,6 @@ function toggleDarkMode() {
   </p>
   </div>
 </div>
+<div id="sidebarOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.3); z-index:999;"></div>
 </body>
 </html>

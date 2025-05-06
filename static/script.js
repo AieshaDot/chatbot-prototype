@@ -24,6 +24,9 @@ document.addEventListener("DOMContentLoaded", function () {
     btn.addEventListener("click", () => {
       chatInput.value = btn.textContent;
       sendMessage();
+  
+      // ⏱️ Wait a moment before scrolling to bottom
+      setTimeout(scrollToBottom, 400);
     });
   });
 
@@ -74,6 +77,8 @@ async function sendMessage() {
       botMarkdownBuffer += text;
       restartTyping();
     }
+    // ✅ Ensure scroll AFTER bot message is fully streamed
+    scrollToBottom();
   } catch (error) {
     console.error("Streaming fetch failed:", error);
     appendMessage("bot", "⚠️ Oops! Something went wrong.");
@@ -86,7 +91,28 @@ function appendMessage(sender, text) {
   messageElem.classList.add("message", sender);
 
   if (sender === "bot") {
-    messageElem.innerHTML = text;
+    function appendMessage(sender, text) {
+      const chatWindow = document.getElementById("chatWindow");
+      const messageElem = document.createElement("div");
+      messageElem.classList.add("message", sender);
+    
+      if (sender === "bot") {
+        const parsed = marked.parse(text);  // ✅ Markdown to HTML
+        messageElem.innerHTML = `
+           <div class="message-text">${marked.parse(text)}</div>
+             <div class="copy-btn-container">
+             <button class="copy-btn" aria-label="Copy to clipboard">
+                <i class="fa fa-copy"></i>
+             <span>Copy</span>
+             </button>
+          </div>
+        `;
+      } else {
+        messageElem.innerText = text;
+      }
+    
+      chatWindow.appendChild(messageElem);
+    }
   } else {
     messageElem.textContent = text;
   }
@@ -101,7 +127,10 @@ function createBotMessagePlaceholder() {
     const chatWindow = document.getElementById("chatWindow");
     const messageElem = document.createElement("div");
     messageElem.classList.add("message", "bot");
-    messageElem.innerHTML = "";
+    messageElem.innerHTML = `
+     <div class="message-text"></div>
+     <button class="copy-btn" aria-label="Copy response">📋</button>
+      `;
     chatWindow.appendChild(messageElem);
   }
 }
@@ -114,24 +143,45 @@ function restartTyping() {
 }
 
 function typeNextChunk() {
-  const botBubble = document.querySelector(".message.bot:last-of-type");
+  const botBubble = document.querySelector(".message.bot:last-of-type .message-text");
   if (!botBubble) return;
 
   if (typingIndex <= botMarkdownBuffer.length) {
     const currentText = botMarkdownBuffer.slice(0, typingIndex);
-    botBubble.innerHTML = marked.parse(currentText);
+    // botBubble.innerHTML = marked.parse(currentText);
+    botBubble.innerHTML = marked.parse(botMarkdownBuffer);
     botBubble.scrollTop = botBubble.scrollHeight;
+
 
     typingIndex++;
     typingTimer = setTimeout(typeNextChunk, 15); // ⏱️ Adjust typing speed here
+
+    // ✅ scroll every few chunks
+    if (typingIndex % 5 === 0) scrollToBottom();
+  } else {
+    scrollToBottom();
   }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   const main = document.querySelector('.home-wrapper .main');
-  if (main) {
+  if (main && window.innerWidth > 768) {
     main.style.marginLeft = '240px';
   }
+  const hamburger = document.getElementById("hamburger");
+  const sidebar = document.querySelector(".sidebar");
+  const overlay = document.getElementById("sidebarOverlay");
+  
+  hamburger?.addEventListener("click", () => {
+    sidebar.classList.toggle("sidebar-open");
+    overlay.style.display = sidebar.classList.contains("sidebar-open") ? "block" : "none";
+  });
+  
+  overlay?.addEventListener("click", () => {
+    sidebar.classList.remove("sidebar-open");
+    overlay.style.display = "none";
+  });
+
 });
 
 window.addEventListener("load", () => {
@@ -140,8 +190,12 @@ window.addEventListener("load", () => {
 
 function enforceMainLayout() {
   const main = document.querySelector('.home-wrapper .main');
-  if (main && main.style.marginLeft !== '240px') {
-    main.style.marginLeft = '240px';
+  if (main) {
+    if (window.innerWidth > 768) {
+      main.style.marginLeft = '240px';
+    } else {
+      main.style.marginLeft = '0';
+    }
   }
 }
 
@@ -151,6 +205,19 @@ window.addEventListener('resize', enforceMainLayout);
 function scrollToBottom() {
   const chatWindow = document.getElementById("chatWindow");
   if (chatWindow) {
-    chatWindow.scrollTop = chatWindow.scrollHeight;
+    chatWindow.scrollTo({ top: chatWindow.scrollHeight, behavior: "smooth" });
   }
 }
+
+document.addEventListener("click", function (e) {
+  if (e.target.classList.contains("copy-btn")) {
+    const messageDiv = e.target.previousElementSibling;
+    if (messageDiv) {
+      const text = messageDiv.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        e.target.textContent = "✅";
+        setTimeout(() => (e.target.textContent = "📋"), 1000);
+      });
+    }
+  }
+});
