@@ -12,3 +12,4 @@ langchain-core
 langchain-text-splitters
 langchain-chroma
 markdown2
+PyMuPDF
