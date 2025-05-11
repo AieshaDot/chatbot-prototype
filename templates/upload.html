@@ -1,0 +1,60 @@
+<!-- templates/upload.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Upload Documents to Chereena</title>
+</head>
+<body>
+  <h1>Upload Knowledge Documents</h1>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".pdf,.docx,.xlsx" />
+    <button type="submit">Upload</button>
+  </form>
+  <div id="uploadStatus"></div>
+
+  <script>
+    document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fileInput = document.querySelector("input[name='file']");
+      const file = fileInput.files[0];
+      if (!file) return alert("Select a file first.");
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/upload-doc", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await res.json();
+      document.getElementById("uploadStatus").innerText =
+        result.message || result.error || "Unknown response";
+    });
+
+  
+    document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+      e.preventDefault();  // 🔥 THIS IS CRUCIAL
+
+      const fileInput = document.getElementById("file");
+      const file = fileInput.files[0];
+      if (!file) {
+        alert("Please select a file");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/upload-doc", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+      alert(result.message || result.error);
+    });
+  </script>
+</body>
+</html>

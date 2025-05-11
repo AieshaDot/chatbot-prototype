@@ -1,3 +1,21 @@
+
+import tiktoken
+
+def count_tokens(messages, model="gpt-4"):
+    enc = tiktoken.encoding_for_model(model)
+    return sum(len(enc.encode(msg["content"])) for msg in messages)
+
+def trim_messages_to_fit_token_limit(messages, max_tokens=8000):
+    trimmed = []
+    total = 0
+    for msg in reversed(messages):
+        token_count = len(msg["content"]) // 4  # quick estimate
+        if total + token_count > max_tokens:
+            break
+        trimmed.insert(0, msg)
+        total += token_count
+    return trimmed
+
 import os
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, StreamingResponse
@@ -20,7 +38,6 @@ from fastapi import UploadFile, File
 from vector_store import add_documents, query_similar_documents
 from vector_store import vectorstore
 from fastapi.responses import JSONResponse
-import tiktoken
 
 
 # Load environment variables
@@ -31,21 +48,6 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # FastAPI app
 app = FastAPI()
-
-# 🔧 Truncation helper function
-def truncate_messages(messages, max_tokens=6000):
-    truncated = []
-    total_tokens = 0
-    for message in reversed(messages):
-        token_estimate = len(message['content']) // 4  # ≈ 4 chars per token
-        if total_tokens + token_estimate <= max_tokens:
-            truncated.insert(0, message)
-            total_tokens += token_estimate
-        else:
-            break
-    return truncated
-
-
 
 # Mount static directory for CSS, JS, and images
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -73,36 +75,12 @@ class AskRequest(BaseModel):
     query: str
 
 
-def count_tokens(messages, model="gpt-4"):
-    enc = tiktoken.encoding_for_model(model)
-    return sum(len(enc.encode(msg["content"])) for msg in messages)
-
-def trim_messages_to_fit_token_limit(messages, max_tokens=8000, model="gpt-4"):
-    enc = tiktoken.encoding_for_model(model)
-    total_tokens = 0
-    trimmed = []
-
-    for msg in reversed(messages):
-        token_count = len(enc.encode(msg.get("content", ""))) + 4  # +4 for role/structure
-        if total_tokens + token_count > max_tokens:
-            break
-        trimmed.insert(0, msg)
-        total_tokens += token_count
-
-    if not trimmed:
-        # fallback to last user message and system prompt
-        return [messages[0], messages[-1]]
-
-    return trimmed
-
-
 # Streaming generator for response
 async def stream_openai_response(messages):
     try:
         response = openai.chat.completions.create(
             model="gpt-4",
-            # messages=trim_messages_to_fit_token_limit(messages),
-            messages = truncate_messages(messages, max_tokens=6000),
+            messages=trim_messages_to_fit_token_limit(messages),
             stream=True
         )
         async def generate():
@@ -135,8 +113,7 @@ async def chat(request: MessageRequest):
         try:
             response = openai.chat.completions.create(
                 model="gpt-4",
-                # messages=trim_messages_to_fit_token_limit(messages),
-                messages = truncate_messages(messages, max_tokens=6000),
+                messages=trim_messages_to_fit_token_limit(messages),
                 stream=True
             )
             for chunk in response:
@@ -206,14 +183,10 @@ async def ask_with_rag(request: AskRequest):
             {"role": "user", "content": prompt}
         ]
 
-
-        # 🔥 Add this line!
-        messages = truncate_messages(messages, max_tokens=6000)
-        
         def stream():
             response = openai.chat.completions.create(
                 model="gpt-4",
-                messages=messages,
+                messages=trim_messages_to_fit_token_limit(messages),
                 stream=True
             )
             for chunk in response:
@@ -223,8 +196,6 @@ async def ask_with_rag(request: AskRequest):
         return StreamingResponse(stream(), media_type="text/plain")
     except Exception as e:
         return {"error": str(e)}
-
-
     
 @app.post("/upload-doc")
 async def upload_document(file: UploadFile = File(...)):

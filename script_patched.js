@@ -1,63 +1,46 @@
-let botMarkdownBuffer = "";
-let typingIndex = 0;
-let typingTimer = null;
 
 function bindCannedQuestionEvents() {
   const chatInput = document.getElementById("chatInput");
-  const submitBtn = document.getElementById("submitBtn");
-
-  document.querySelectorAll(".question").forEach((btn) => {
-    // 🔁 Remove any previous listener
-    const newBtn = btn.cloneNode(true);
-    btn.parentNode.replaceChild(newBtn, btn);
-
-    newBtn.addEventListener("click", () => {
-      chatInput.value = newBtn.textContent;
-
-      // Let sendMessage run before resetting input
-      submitBtn.click();
-
-      setTimeout(() => {
-        chatInput.value = "";
-        chatInput.blur();
-      }, 100);
-
-      setTimeout(scrollToBottom, 400);
-    });
-  });
+  bindCannedQuestionEvents();
 }
+
+let botMarkdownBuffer = "";
+let typingIndex = 0;
+let typingTimer = null;
 
 document.addEventListener("DOMContentLoaded", function () {
   const chatInput = document.getElementById("chatInput");
   const submitBtn = document.getElementById("submitBtn");
 
-    // Enter key submits message
-    chatInput.addEventListener("keydown", function (event) {
-      if (event.key === "Enter" && !event.shiftKey) {
-        event.preventDefault();
-        sendMessage();
-      }
-    });
-
-    // Submit button
-    submitBtn.addEventListener("click", function () {
+  // Enter key submits message
+  chatInput.addEventListener("keydown", function (event) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
       sendMessage();
-    });
+    }
+  });
 
-      // Canned questions
-      bindCannedQuestionEvents();
+  // Submit button
+  submitBtn.addEventListener("click", function () {
+    sendMessage();
+  });
 
-      const clearBtn = document.getElementById("clearChat");
-      if (clearBtn) {
-        clearBtn.addEventListener("click", function (e) {
-          e.preventDefault();
-          window.location.reload();  // 🔁 reloads the full page
-        });
-      }
-    });
+  // Canned questions
+  bindCannedQuestionEvents();
 
+  // Clear chat
+  const clearBtn = document.getElementById("clearChat");
+  if (clearBtn) {
+    clearBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      const chatWindow = document.getElementById("chatWindow");
+      chatWindow.innerHTML = "";
+        bindCannedQuestionEvents();
+});
+  }
+});
 
-async function sendMessage(optionalMessage = null) {
+async function sendMessage() {
   const inputField = document.getElementById("chatInput");
   const message = inputField.value.trim();
   if (!message) return;
@@ -109,6 +92,12 @@ function appendMessage(sender, text) {
   messageElem.classList.add("message", sender);
 
   if (sender === "bot") {
+    function appendMessage(sender, text) {
+      const chatWindow = document.getElementById("chatWindow");
+      const messageElem = document.createElement("div");
+      messageElem.classList.add("message", sender);
+    
+      if (sender === "bot") {
         const parsed = marked.parse(text);  // ✅ Markdown to HTML
         messageElem.innerHTML = `
            <div class="message-text">${marked.parse(text)}</div>
@@ -122,6 +111,12 @@ function appendMessage(sender, text) {
       } else {
         messageElem.innerText = text;
       }
+    
+      chatWindow.appendChild(messageElem);
+    }
+  } else {
+    messageElem.textContent = text;
+  }
 
   chatWindow.appendChild(messageElem);
   chatWindow.scrollTop = chatWindow.scrollHeight;

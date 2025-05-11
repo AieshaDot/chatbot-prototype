@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("darkModeIcon").src = "../static/images/light_mode_sun.png";
     document.getElementById("trashCanIcon").src = "../static/images/trashcan_icon_dark.png";
     document.getElementById("externalLinkIcon").src = "../static/images/external_link_dark.png";
+    document.getElementById("itsmf-header-logo-top").src = "../static/images/itsmf_cc2_logo-horiz_white.png"
   }
 
   const toggleLink = document.getElementById("darkModeToggle");
@@ -75,7 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
   <aside class="sidebar">
     <button class="new-chat" onclick="window.location.href='/new_chat'">📝 New Chat</button>
     <div class="sidebar-bottom">
-      <img id="itsmfLogo" src="../static/images/itsmf_technology_logo.png" style="width: 213px; height: 32px;" alt="ITSMF logo" />
+      <img id="itsmfLogo" src="../static/images/itsmf_technology_logo.png"  onclick="window.location.href='https://itsmfleaders.org/'" style="width: 213px; height: 32px;" alt="ITSMF logo" />
       <hr style="border: none; border-top: 1px solid #ddd; margin: 10px 0;" />
       <div class="menu-item">
         <img src="../static/images/trashcan_icon.png" class="icon" id="trashCanIcon" alt="Trash Can Icon" />
@@ -96,11 +97,12 @@ document.addEventListener("DOMContentLoaded", () => {
   <div class="main">
     <div class="topbar">
       <div class="topbar-left">
-        <span class="logo">Chereena 2.0</span>
+        <!-- <span class="logo">Chereena 2.0</span> -->
+        <img class="logo" src="../static/images/NewChatButton.png" alt="Chereena 2.0" id="itsmf-Chereena-top"/>
       </div>
     
       <div class="topbar-center">
-        <img class="itsmf-header-logo" src="../static/images/ITSMF_Logo_Icon_Color.png" alt="ITSMF Logo" />
+        <img class="itsmf-header-logo" src="../static/images/itsmf_cc2_logo-horiz_color.png" alt="ITSMF Logo" onclick="window.location.href='/'" id="itsmf-header-logo-top">
       </div>
     
       <div class="topbar-right auth-buttons">
@@ -130,7 +132,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     <div class="chat-footer">
       <p>
-      By messaging Chereena, you agree to our <a href="/privacy-policy">Terms</a> and have read our <a href="/privacy-policy">Privacy Policy</a>.
+        By messaging Chereena, you confirmed you have read our 
+        <a href="/privacy-policy">Privacy Policy.</a>
       </p>
     </div>
   </div>
@@ -150,12 +153,22 @@ document.addEventListener("DOMContentLoaded", () => {
     const iconMoonSun = document.getElementById("darkModeIcon");
     const iconCanTrash = document.getElementById("trashCanIcon");
     const iconExternal = document.getElementById("externalLinkIcon");
-  
+    const topIcon = document.getElementById("itsmf-header-logo-top");
+    const chereenaIcon = document.getElementById("itsmf-Chereena-top");
+
     link.textContent = isDark ? "Light Mode" : "Dark Mode";
   
     logo.src = isDark
       ? "../static/images/itsmf_technology_logo-dark.png"
       : "../static/images/itsmf_technology_logo.png";
+
+    topIcon.src = isDark
+      ? "../static/images/itsmf_cc2_logo-horiz_white.png"
+      : "../static/images/itsmf_cc2_logo-horiz_color.png";
+
+      chereenaIcon.src = isDark
+        ? "../static/images/chereena_light.png"
+        : "../static/images/NewChatButton.png";
   
     iconMoonSun.src = isDark
       ? "../static/images/light_mode_sun.png"

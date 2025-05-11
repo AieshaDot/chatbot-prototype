@@ -1,27 +1,14 @@
+
 let botMarkdownBuffer = "";
 let typingIndex = 0;
 let typingTimer = null;
 
 function bindCannedQuestionEvents() {
   const chatInput = document.getElementById("chatInput");
-  const submitBtn = document.getElementById("submitBtn");
-
   document.querySelectorAll(".question").forEach((btn) => {
-    // 🔁 Remove any previous listener
-    const newBtn = btn.cloneNode(true);
-    btn.parentNode.replaceChild(newBtn, btn);
-
-    newBtn.addEventListener("click", () => {
-      chatInput.value = newBtn.textContent;
-
-      // Let sendMessage run before resetting input
-      submitBtn.click();
-
-      setTimeout(() => {
-        chatInput.value = "";
-        chatInput.blur();
-      }, 100);
-
+    btn.addEventListener("click", () => {
+      chatInput.value = btn.textContent;
+      sendMessage();
       setTimeout(scrollToBottom, 400);
     });
   });
@@ -31,51 +18,46 @@ document.addEventListener("DOMContentLoaded", function () {
   const chatInput = document.getElementById("chatInput");
   const submitBtn = document.getElementById("submitBtn");
 
-    // Enter key submits message
-    chatInput.addEventListener("keydown", function (event) {
-      if (event.key === "Enter" && !event.shiftKey) {
-        event.preventDefault();
-        sendMessage();
-      }
-    });
-
-    // Submit button
-    submitBtn.addEventListener("click", function () {
+  chatInput.addEventListener("keydown", function (event) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
       sendMessage();
+    }
+  });
+
+  submitBtn.addEventListener("click", function () {
+    sendMessage();
+  });
+
+  bindCannedQuestionEvents();
+
+  const clearBtn = document.getElementById("clearChat");
+  if (clearBtn) {
+    clearBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      const chatWindow = document.getElementById("chatWindow");
+      chatWindow.innerHTML = "";
+      bindCannedQuestionEvents();  // rebind after clear
     });
+  }
+});
 
-      // Canned questions
-      bindCannedQuestionEvents();
-
-      const clearBtn = document.getElementById("clearChat");
-      if (clearBtn) {
-        clearBtn.addEventListener("click", function (e) {
-          e.preventDefault();
-          window.location.reload();  // 🔁 reloads the full page
-        });
-      }
-    });
-
-
-async function sendMessage(optionalMessage = null) {
+async function sendMessage() {
   const inputField = document.getElementById("chatInput");
   const message = inputField.value.trim();
   if (!message) return;
 
   appendMessage("user", message);
-  scrollToBottom(); 
+  scrollToBottom();
   document.getElementById("typingIndicator").style.display = "block";
   inputField.value = "";
   botMarkdownBuffer = "";
   typingIndex = 0;
-  
 
   try {
-    // const response = await fetch("/chat", {
-      const response = await fetch("/ask", {
+    const response = await fetch("/ask", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      // body: JSON.stringify({ message }),
       body: JSON.stringify({ query: message }),
     });
 
@@ -87,7 +69,6 @@ async function sendMessage(optionalMessage = null) {
     const decoder = new TextDecoder("utf-8");
     let chunk;
 
-    // Clear previous bot message placeholder
     createBotMessagePlaceholder();
 
     while (!(chunk = await reader.read()).done) {
@@ -95,7 +76,7 @@ async function sendMessage(optionalMessage = null) {
       botMarkdownBuffer += text;
       restartTyping();
     }
-    // ✅ Ensure scroll AFTER bot message is fully streamed
+
     scrollToBottom();
   } catch (error) {
     console.error("Streaming fetch failed:", error);
@@ -109,19 +90,19 @@ function appendMessage(sender, text) {
   messageElem.classList.add("message", sender);
 
   if (sender === "bot") {
-        const parsed = marked.parse(text);  // ✅ Markdown to HTML
-        messageElem.innerHTML = `
-           <div class="message-text">${marked.parse(text)}</div>
-             <div class="copy-btn-container">
-             <button class="copy-btn" aria-label="Copy to clipboard">
-                <i class="fa fa-copy"></i>
-             <span>Copy</span>
-             </button>
-          </div>
-        `;
-      } else {
-        messageElem.innerText = text;
-      }
+    const parsed = marked.parse(text);
+    messageElem.innerHTML = `
+      <div class="message-text">${parsed}</div>
+      <div class="copy-btn-container">
+        <button class="copy-btn" aria-label="Copy to clipboard">
+          <i class="fa fa-copy"></i>
+          <span>Copy</span>
+        </button>
+      </div>
+    `;
+  } else {
+    messageElem.textContent = text;
+  }
 
   chatWindow.appendChild(messageElem);
   chatWindow.scrollTop = chatWindow.scrollHeight;
@@ -134,9 +115,9 @@ function createBotMessagePlaceholder() {
     const messageElem = document.createElement("div");
     messageElem.classList.add("message", "bot");
     messageElem.innerHTML = `
-     <div class="message-text"></div>
-     <button class="copy-btn" aria-label="Copy response">📋</button>
-      `;
+      <div class="message-text"></div>
+      <button class="copy-btn" aria-label="Copy response">📋</button>
+    `;
     chatWindow.appendChild(messageElem);
   }
 }
@@ -154,18 +135,21 @@ function typeNextChunk() {
 
   if (typingIndex <= botMarkdownBuffer.length) {
     const currentText = botMarkdownBuffer.slice(0, typingIndex);
-    // botBubble.innerHTML = marked.parse(currentText);
     botBubble.innerHTML = marked.parse(botMarkdownBuffer);
     botBubble.scrollTop = botBubble.scrollHeight;
 
-
     typingIndex++;
-    typingTimer = setTimeout(typeNextChunk, 15); // ⏱️ Adjust typing speed here
-
-    // ✅ scroll every few chunks
+    typingTimer = setTimeout(typeNextChunk, 15);
     if (typingIndex % 5 === 0) scrollToBottom();
   } else {
     scrollToBottom();
+  }
+}
+
+function scrollToBottom() {
+  const chatWindow = document.getElementById("chatWindow");
+  if (chatWindow) {
+    chatWindow.scrollTo({ top: chatWindow.scrollHeight, behavior: "smooth" });
   }
 }
 
@@ -177,17 +161,16 @@ window.addEventListener('DOMContentLoaded', () => {
   const hamburger = document.getElementById("hamburger");
   const sidebar = document.querySelector(".sidebar");
   const overlay = document.getElementById("sidebarOverlay");
-  
+
   hamburger?.addEventListener("click", () => {
     sidebar.classList.toggle("sidebar-open");
     overlay.style.display = sidebar.classList.contains("sidebar-open") ? "block" : "none";
   });
-  
+
   overlay?.addEventListener("click", () => {
     sidebar.classList.remove("sidebar-open");
     overlay.style.display = "none";
   });
-
 });
 
 window.addEventListener("load", () => {
@@ -208,13 +191,6 @@ function enforceMainLayout() {
 window.addEventListener('load', enforceMainLayout);
 window.addEventListener('resize', enforceMainLayout);
 
-function scrollToBottom() {
-  const chatWindow = document.getElementById("chatWindow");
-  if (chatWindow) {
-    chatWindow.scrollTo({ top: chatWindow.scrollHeight, behavior: "smooth" });
-  }
-}
-
 document.addEventListener("click", function (e) {
   if (e.target.classList.contains("copy-btn")) {
     const messageDiv = e.target.previousElementSibling;
@@ -228,10 +204,10 @@ document.addEventListener("click", function (e) {
   }
 });
 
-document.getElementById("uploadForm").addEventListener("submit", async function (e) {
-  e.preventDefault();  // <-- This prevents "Method Not Allowed"
+document.getElementById("uploadForm")?.addEventListener("submit", async function (e) {
+  e.preventDefault();
   const formData = new FormData(this);
-  
+
   const response = await fetch("/upload-doc", {
     method: "POST",
     body: formData,
