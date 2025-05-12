@@ -130,18 +130,18 @@ body.home-wrapper > .app-wrapper {
 @media screen and (max-width: 768px) {
   .home-wrapper .section {
     flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
-    overflow-y: visible;
-    padding-bottom: 1rem;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
   }
-  
+
   .home-wrapper .column {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
   }
-  
+
   .home-wrapper .question {
     margin: 0.5rem 1rem;
   }
@@ -610,10 +610,17 @@ body.home-wrapper.dark-mode .chatbar button:hover {
     font-size: 0.85rem;
   }
 
+  body.home-wrapper {
+    height: auto;
+    overflow-y: auto;
+  }
+
   .main {
-    height: 100vh !important;
-    overflow-y: auto !important;
-    padding-bottom: 10rem;  /* give room for chatbar and footer */
+    height: auto;
+    overflow-y: visible;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 12rem; /* ensures chatbar/footer don’t block scroll */
   }
 
   .topbar {
@@ -653,11 +660,11 @@ body.home-wrapper.dark-mode .chatbar button:hover {
 
   .chat-window {
     flex-grow: 1;
+    min-height: 200px;
+    padding-bottom: 12rem;
     overflow-y: auto;
-    height: calc(100vh - 420px); /* ⬅️ more space */
-    padding-bottom: 12rem;       /* makes room for fixed chatbar/footer */
   }
-  
+
   .chat-footer {
     position: fixed;
     bottom: 0;
@@ -733,7 +740,7 @@ body.home-wrapper.dark-mode .chatbar button:hover {
     margin: 0.5rem auto;  /* ✅ center question blocks */
   }
 
-  @media screen and (max-width: 768px) {
+
     .topbar {
       flex-direction: column;
       align-items: center;
@@ -761,7 +768,7 @@ body.home-wrapper.dark-mode .chatbar button:hover {
       justify-content: center;
       margin-bottom: 0.5rem;
     }
-  }
+
 }
 
 
