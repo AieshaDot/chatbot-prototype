@@ -21,6 +21,8 @@ from vector_store import add_documents, query_similar_documents
 from vector_store import vectorstore
 from fastapi.responses import JSONResponse
 import tiktoken
+from pathlib import Path
+from load_docs import (extract_text_from_pdf, extract_text_from_docx, extract_text_from_xlsx, extract_text_from_txt)
 
 
 # Load environment variables
@@ -31,6 +33,10 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # FastAPI app
 app = FastAPI()
+
+# Load ITSMF system instructions
+itsmf_prompt = Path("itsmf_instructions.txt").read_text().strip()
+
 
 # 🔧 Truncation helper function
 def truncate_messages(messages, max_tokens=6000):
@@ -183,12 +189,12 @@ async def ask_with_rag(request: AskRequest):
         query = request.query
         context_docs = query_similar_documents(query)
 
+
         # ✅ Step 1: Decide whether RAG applies
         if context_docs and any(doc.strip() for doc in context_docs):
             # ✅ Step 2: Add chatbot instructions and RAG context
             prompt = (
-                "You are Chereena, a professional, helpful chatbot for ITSMF.\n"
-                "Use the following context from internal documents to answer the user's question accurately:\n\n"
+                "\n\nUse the following context from internal documents to answer the user's question accurately:\n\n"
                 + "\n\n".join(context_docs)
                 + f"\n\nUser Question: {query}"
             )
@@ -202,10 +208,9 @@ async def ask_with_rag(request: AskRequest):
             )
 
         messages = [
-            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "system", "content": itsmf_prompt},
             {"role": "user", "content": prompt}
         ]
-
 
         # 🔥 Add this line!
         messages = truncate_messages(messages, max_tokens=6000)
@@ -225,6 +230,60 @@ async def ask_with_rag(request: AskRequest):
         return {"error": str(e)}
 
 
+
+
+
+
+
+# @app.post("/ask")
+# async def ask_with_rag(request: AskRequest):
+#     try:
+#         query = request.query
+#         context_docs = query_similar_documents(query)
+        
+
+#         # ✅ Step 1: Decide whether RAG applies
+#         if context_docs and any(doc.strip() for doc in context_docs):
+#             # ✅ Step 2: Add chatbot instructions and RAG context
+#             prompt = (
+#                 "You are Chereena, a professional, helpful chatbot for ITSMF.\n"
+#                 "Use the following context from internal documents to answer the user's question accurately:\n\n"
+#                 + "\n\n".join(context_docs)
+#                 + f"\n\nUser Question: {query}"
+#             )
+#         else:
+#             # ✅ Step 3: No context found — fallback behavior
+#             prompt = (
+#                 "You are Chereena, an ITSMF chatbot. "
+#                 "The user's question was not found in your internal knowledge base. "
+#                 "Give a helpful and honest response, or suggest contacting ITSMF directly.\n\n"
+#                 f"User Question: {query}"
+#             )
+
+#         messages = [
+#             {"role": "system", "content": "You are a helpful assistant."},
+#             {"role": "user", "content": prompt}
+#         ]
+
+
+#         # 🔥 Add this line!
+#         messages = truncate_messages(messages, max_tokens=6000)
+        
+#         def stream():
+#             response = openai.chat.completions.create(
+#                 model="gpt-4",
+#                 messages=messages,
+#                 stream=True
+#             )
+#             for chunk in response:
+#                 if chunk.choices[0].delta.content:
+#                     yield chunk.choices[0].delta.content
+
+#         return StreamingResponse(stream(), media_type="text/plain")
+#     except Exception as e:
+#         return {"error": str(e)}
+
+
     
 @app.post("/upload-doc")
 async def upload_document(file: UploadFile = File(...)):
@@ -241,8 +300,10 @@ async def upload_document(file: UploadFile = File(...)):
         text = extract_text_from_docx(path)
     elif ext == "xlsx":
         text = extract_text_from_xlsx(path)
+    elif ext =="txt":
+        text = extract_text_from_txt(path)    
     else:
-        return {"error": "Unsupported file type. Use PDF, DOCX, or XLSX."}
+        return {"error": "Unsupported file type. Use PDF, DOCX, XLSX, or TXT."}
 
     if not text.strip():
         return {"error": "File was uploaded, but no readable text was extracted."}

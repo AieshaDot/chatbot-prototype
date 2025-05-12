@@ -240,3 +240,10 @@ document.getElementById("uploadForm").addEventListener("submit", async function 
   const result = await response.json();
   document.getElementById("uploadStatus").innerText = result.message || result.error;
 });
+
+window.addEventListener("load", () => {
+  const chatWindow = document.getElementById("chatWindow");
+  if (chatWindow) {
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+});

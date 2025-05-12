@@ -10,7 +10,7 @@ html, body {
 body.home-wrapper {
   font-family: 'Inter', 'Helvetica Neue', sans-serif;
   margin: 0;
-  height: auto;
+  height: 100vh;
   min-height: 100vh;
   display: block;
   overflow-y: auto;
@@ -132,6 +132,7 @@ body.home-wrapper > .app-wrapper {
     flex-direction: column;
     align-items: stretch;
     gap: 1rem;
+    overflow-y: auto;
   }
 
   .home-wrapper .column {
@@ -213,6 +214,7 @@ body.home-wrapper > .app-wrapper {
   justify-content: space-between;
   z-index: 900;
   box-sizing: border-box;
+  border-radius: 12px;
 }
 
 .home-wrapper .chatbar input[type="text"] {
@@ -390,25 +392,14 @@ body.home-wrapper.dark-mode .chat-footer a:hover {
 
 
 body.home-wrapper.dark-mode .chatbar input[type="text"] {
-  background-color: #1e1e3f;  /* Match background */
-  color: #f3f4f6;             /* Light text */
+  flex: 1;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
   border: none;
-  box-shadow: none;
-}
-
-body.home-wrapper.dark-mode .chatbar button {
-  background-color: #2563eb;
-  color: white;
-  border: none;
-  box-shadow: none;
-}
-
-/*  */ */ */
-
-body.home-wrapper.dark-mode .chatbar input[type="text"] {
-  background-color: transparent;
-  color: #f3f4f6;
-  border: none;
+  border-radius: 999px;
+  background-color: #ffffff;
+  color: #111827;
+  margin-right: 10px;
   outline: none;
 }
 
@@ -416,11 +407,15 @@ body.home-wrapper.dark-mode .chatbar button {
   background-color: #2563eb;
   color: white;
   border: none;
-  box-shadow: none;
+  border-radius: 999px;
+  padding: 0.6rem 1.25rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
-.home-wrapper .message.bot li {
-  margin-bottom: 0.3rem;
+body.home-wrapper.dark-mode .chatbar button:hover {
+  background-color: #1d4ed8;
 }
 
 .home-wrapper .menu-item {
@@ -619,9 +614,9 @@ body.home-wrapper.dark-mode .chatbar button {
   }
 
   .main {
-      height: auto !important;
-      min-height: auto !important;
-      overflow-y: visible !important;
+    height: 100vh !important;
+    overflow-y: auto !important;
+    padding-bottom: 10rem;  /* give room for chatbar and footer */
   }
 
   .topbar {
@@ -840,18 +835,15 @@ body.home-wrapper.dark-mode .chatbar button {
 
 
 body.home-wrapper.dark-mode .chatbar {
-  position: fixed;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
+  background-color: transparent;
+  /* border: 1px solid rgba(255, 255, 255, 0.05);  🔧 Softer outline */
+  border: 1px solid #1a1c3f;  /* match surrounding dark background */
+  border-radius: 999px;
   max-width: 1050px;
-  padding: 0.75rem 2rem;
-  background-color: #1e1e3f;
-  border-radius: 0;
+  padding: 0.75rem 1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  z-index: 900;
   box-sizing: border-box;
+  backdrop-filter: blur(4px);  /* ✅ Optional: adds polish */
 }

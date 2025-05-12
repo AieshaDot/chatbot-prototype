@@ -2,6 +2,7 @@ import fitz  # PyMuPDF
 import docx
 import pandas as pd
 
+
 def extract_text_from_pdf(file_path):
     doc = fitz.open(file_path)
     text = ""
@@ -17,10 +18,15 @@ def extract_text_from_docx(file_path):
     return text
 
 
-def extract_text_from_xlsx(path):
-    df_list = pd.read_excel(path, sheet_name=None)  # All sheets
+def extract_text_from_xlsx(file_path):
+    df_list = pd.read_excel(file_path, sheet_name=None)  # All sheets
     all_text = []
     for sheet, df in df_list.items():
         all_text.append(f"Sheet: {sheet}")
         all_text.append(df.astype(str).to_string(index=False))
     return "\n".join(all_text)
+
+
+def extract_text_from_txt(file_path):
+    with open(file_path, "r", encoding="utf-8") as file:
+        return file.read()
