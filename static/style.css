@@ -132,19 +132,16 @@ body.home-wrapper > .app-wrapper {
     flex-direction: column;
     align-items: stretch;
     gap: 1rem;
-    overflow-y: auto;
+    overflow-y: visible;
+    padding-bottom: 1rem;
   }
-
+  
   .home-wrapper .column {
-    max-width: 100%;
     width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
-
-  .home-wrapper .column h3 {
-    text-align: left;
-    margin-left: 1rem;
-  }
-
+  
   .home-wrapper .question {
     margin: 0.5rem 1rem;
   }
@@ -655,11 +652,12 @@ body.home-wrapper.dark-mode .chatbar button:hover {
   }
 
   .chat-window {
-    padding-bottom: 9rem;
-    overflow-y: auto;
     flex-grow: 1;
+    overflow-y: auto;
+    height: calc(100vh - 420px); /* ⬅️ more space */
+    padding-bottom: 12rem;       /* makes room for fixed chatbar/footer */
   }
-
+  
   .chat-footer {
     position: fixed;
     bottom: 0;
