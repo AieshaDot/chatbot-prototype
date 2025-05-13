@@ -852,3 +852,23 @@ body.home-wrapper.dark-mode .chatbar {
   box-sizing: border-box;
   backdrop-filter: blur(4px);  /* ✅ Optional: adds polish */
 }
+
+/* ─── 2025-05-12 FINAL mobile scroll patch ─── */
+@media (max-width:768px){
+
+  /* Let the wrapper grow and allow scrolling */
+  body.home-wrapper > .app-wrapper{
+    height:auto       !important;   /* replaces 100vh        */
+    min-height:100vh;               /* still fill tall phones*/
+    overflow:visible !important;    /* releases scroll-bar   */
+  }
+
+  /* Chat column follows suit */
+  .home-wrapper .chat-window{
+    height:auto       !important;   /* neutralises 320px calc*/
+    min-height:0      !important;
+    flex:1 1 auto     !important;
+    overflow-y:auto   !important;
+    padding-bottom:calc(100px + env(safe-area-inset-bottom)) !important;
+  }
+}
