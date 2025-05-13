@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import openai
+from openai import OpenAI
 from dotenv import load_dotenv
 import asyncio
 import markdown2
@@ -18,13 +19,22 @@ from load_docs import extract_text_from_pdf, extract_text_from_docx, extract_tex
 from vector_store import add_documents
 from fastapi import UploadFile, File
 from vector_store import add_documents, query_similar_documents
-from vector_store import vectorstore
 from fastapi.responses import JSONResponse
 import tiktoken
 from pathlib import Path
 from load_docs import (extract_text_from_pdf, extract_text_from_docx, extract_text_from_xlsx, extract_text_from_txt)
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from vector_store import retriever, add_documents, query_similar_documents
+from fastapi import Request
+from fastapi.responses import StreamingResponse, JSONResponse
+from openai import OpenAI
+from dotenv import load_dotenv
+from pathlib import Path
+import asyncio
+from vector_store import retriever
+import nltk
+
 
 
 # Load environment variables
@@ -135,15 +145,7 @@ async def stream_openai_response(messages):
 
 # Chat endpoint (streaming)
 from fastapi.responses import StreamingResponse
-# @app.post("/chat")
-# async def chat(request: MessageRequest):
-#     if not request.message:
-#         raise HTTPException(400, "No message provided")
-#     messages = [
-#         {"role": "system", "content": itsmf_prompt},
-#         {"role": "user",   "content": request.message}
-#     ]
-#     return StreamingResponse(stream(messages), media_type="text/event-stream")
+
 
 
 # New Chat Window
@@ -175,41 +177,38 @@ async def add_docs(request: AddDocsRequest):
     except Exception as e:
         return {"error": str(e)}
 
+
+
+# 🔐 Load .env values
+load_dotenv()
+
+# ✅ Instantiate new OpenAI client (no API key needed in code)
+client = OpenAI()
+
 @app.post("/ask")
-async def ask_with_rag(request: AskRequest):
+async def ask(request: Request):
+    data = await request.json()
+    query = data.get("message", "")
+    if not query:
+        return JSONResponse({"error": "Missing 'message' field"}, status_code=400)
+
     try:
-        # query = request.query
-        query = request.message
-        context_docs = query_similar_documents(query)
-
-
-        # ✅ Step 1: Decide whether RAG applies
-        if context_docs and any(doc.strip() for doc in context_docs):
-            # ✅ Step 2: Add chatbot instructions and RAG context
-            prompt = (
-                "\n\nUse the following context from internal documents to answer the user's question accurately:\n\n"
-                + "\n\n".join(context_docs)
-                + f"\n\nUser Question: {query}"
-            )
-        else:
-            # ✅ Step 3: No context found — fallback behavior
-            prompt = (
-                "You are Chereena, an ITSMF chatbot. "
-                "The user's question was not found in your internal knowledge base. "
-                "Give a helpful and honest response, or suggest contacting ITSMF directly.\n\n"
-                f"User Question: {query}"
-            )
+        system_prompt = Path("itsmf_instructions.txt").read_text().strip()
+        docs = retriever.get_relevant_documents(query)
+        context = "\n\n".join(doc.page_content for doc in docs)
 
         messages = [
-            {"role": "system", "content": itsmf_prompt},
-            {"role": "user", "content": prompt}
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"{query}\n\nUse this ITSMF context:\n{context}"}
         ]
 
-        # 🔥 Add this line!
-        messages = truncate_messages(messages, max_tokens=6000)
-        
-        def stream():
-            response = openai.chat.completions.create(
+    except Exception as e:
+        print("❌ Setup Error:", e)
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+    async def stream_openai():
+        try:
+            response = client.chat.completions.create(
                 model="gpt-4",
                 messages=messages,
                 stream=True
@@ -217,105 +216,87 @@ async def ask_with_rag(request: AskRequest):
             for chunk in response:
                 if chunk.choices[0].delta.content:
                     yield chunk.choices[0].delta.content
+                await asyncio.sleep(0)
+        except Exception as e:
+            print("❌ Stream Error:", e)
+            yield f"[ERROR]: {str(e)}"
 
-        return StreamingResponse(stream(), media_type="text/plain")
-    except Exception as e:
-        return {"error": str(e)}
-
-
-
-
-
-
-
-# @app.post("/ask")
-# async def ask_with_rag(request: AskRequest):
-#     try:
-#         query = request.query
-#         context_docs = query_similar_documents(query)
-        
-
-#         # ✅ Step 1: Decide whether RAG applies
-#         if context_docs and any(doc.strip() for doc in context_docs):
-#             # ✅ Step 2: Add chatbot instructions and RAG context
-#             prompt = (
-#                 "You are Chereena, a professional, helpful chatbot for ITSMF.\n"
-#                 "Use the following context from internal documents to answer the user's question accurately:\n\n"
-#                 + "\n\n".join(context_docs)
-#                 + f"\n\nUser Question: {query}"
-#             )
-#         else:
-#             # ✅ Step 3: No context found — fallback behavior
-#             prompt = (
-#                 "You are Chereena, an ITSMF chatbot. "
-#                 "The user's question was not found in your internal knowledge base. "
-#                 "Give a helpful and honest response, or suggest contacting ITSMF directly.\n\n"
-#                 f"User Question: {query}"
-#             )
-
-#         messages = [
-#             {"role": "system", "content": "You are a helpful assistant."},
-#             {"role": "user", "content": prompt}
-#         ]
-
-
-#         # 🔥 Add this line!
-#         messages = truncate_messages(messages, max_tokens=6000)
-        
-#         def stream():
-#             response = openai.chat.completions.create(
-#                 model="gpt-4",
-#                 messages=messages,
-#                 stream=True
-#             )
-#             for chunk in response:
-#                 if chunk.choices[0].delta.content:
-#                     yield chunk.choices[0].delta.content
-
-#         return StreamingResponse(stream(), media_type="text/plain")
-#     except Exception as e:
-#         return {"error": str(e)}
-
-
+    return StreamingResponse(stream_openai(), media_type="text/plain")
     
+
+from fastapi import UploadFile, File
+import os
+import shutil
+from vector_store import add_documents
+
 @app.post("/upload-doc")
 async def upload_document(file: UploadFile = File(...)):
-    ext = file.filename.split(".")[-1].lower()
-    contents = await file.read()
-    path = f"temp_{file.filename}"
+    try:
+        # ✅ Save uploaded file to a temp directory (needed for TextLoader)
+        os.makedirs("uploaded_files", exist_ok=True)
+        temp_path = os.path.join("uploaded_files", file.filename)
 
-    with open(path, "wb") as f:
-        f.write(contents)
+        with open(temp_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
 
-    if ext == "pdf":
-        text = extract_text_from_pdf(path)
-    elif ext == "docx":
-        text = extract_text_from_docx(path)
-    elif ext == "xlsx":
-        text = extract_text_from_xlsx(path)
-    elif ext =="txt":
-        text = extract_text_from_txt(path)    
-    else:
-        return {"error": "Unsupported file type. Use PDF, DOCX, XLSX, or TXT."}
+        # ✅ Pass filepath instead of raw text to add_documents
+        added_count = add_documents(temp_path)
 
-    if not text.strip():
-        return {"error": "File was uploaded, but no readable text was extracted."}
+        # Optional: Clean up temp file afterward
+        # os.remove(temp_path)
 
-    add_documents([text])
-    return {"message": f"{file.filename} added to vector store."}
-    
-    templates = Jinja2Templates(directory="templates")
+        return {"message": f"✅ Uploaded and added {added_count} chunks from {file.filename}"}
+
+    except Exception as e:
+        print("❌ Upload failed:", e)
+        return {"error": str(e)}
+
 
 @app.get("/upload", response_class=HTMLResponse)
 async def show_upload(request: Request):
     return templates.TemplateResponse("upload.html", {"request": request})
 
+from vector_store import vectordb
+from fastapi.responses import JSONResponse
 
 @app.get("/vector-docs")
-async def get_vector_docs():
+async def list_vector_documents():
     try:
-        collection = vectorstore._collection  # Access raw Chroma collection
-        results = collection.get()
-        return JSONResponse(content=results)
+        # Pull all stored docs
+        results = vectordb.get(include=["documents", "metadatas"])
+
+        # Safely slice to first 100 if too many
+        docs = results.get("documents", [])[:100]
+        metas = results.get("metadatas", [])[:100]
+
+        # Combine into structured list
+        combined = []
+        for doc, meta in zip(docs, metas):
+            combined.append({
+                "text": doc,
+                "metadata": meta
+            })
+
+        return {"documents": combined}
+
     except Exception as e:
-        return {"error": str(e)}
+        print("❌ Error fetching vector docs:", e)
+        return JSONResponse(status_code=500, content={"error": str(e)})
+    
+@app.get("/vector-filenames")
+async def list_uploaded_filenames():
+    try:
+        results = vectordb.get(include=["metadatas"])
+        metas = results.get("metadatas", [])[:200]  # adjust limit if needed
+
+        # Extract just 'source' fields (filenames)
+        filenames = [meta.get("source") for meta in metas if "source" in meta]
+
+        # Optionally remove duplicates and nulls
+        unique_filenames = sorted(set(f for f in filenames if f))
+
+        return {"filenames": unique_filenames}
+
+    except Exception as e:
+        print("❌ Error fetching filenames:", e)
+        return JSONResponse(status_code=500, content={"error": str(e)})

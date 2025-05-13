@@ -17,3 +17,17 @@ python-docx
 pandas
 openpyxl
 python-multipart
+langchain>=0.2.0
+langchain-openai>=0.1.0
+langchain-chroma>=0.1.0
+chromadb>=0.4.24
+openai>=1.10.0
+langchain
+langchain-community
+unstructured
+pdfminer.six
+python-docx
+unstructured
+pdfminer.six
+beautifulsoup4
+networkx
