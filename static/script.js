@@ -256,3 +256,13 @@ window.addEventListener("load", () => {
     chatWindow.scrollTop = chatWindow.scrollHeight;
   }
 });
+
+function ensureChatScrollOnResize() {
+  const chatWindow = document.getElementById("chatWindow");
+  if (chatWindow) {
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+}
+
+window.addEventListener("resize", ensureChatScrollOnResize);
+window.addEventListener("orientationchange", ensureChatScrollOnResize);
