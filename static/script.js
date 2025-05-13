@@ -124,8 +124,15 @@ function appendMessage(sender, text) {
         messageElem.innerText = text;
       }
 
-  chatWindow.appendChild(messageElem);
-  chatWindow.scrollTop = chatWindow.scrollHeight;
+      chatWindow.appendChild(messageElem);
+
+      // ✅ Always move typing indicator below the latest message
+      const typingIndicator = document.getElementById("typingIndicator");
+      if (typingIndicator) {
+        chatWindow.appendChild(typingIndicator);
+      }
+      
+      chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
 function createBotMessagePlaceholder() {

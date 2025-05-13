@@ -658,13 +658,6 @@ body.home-wrapper.dark-mode .chatbar button:hover {
     flex-shrink: 0;
   }
 
-  /* .chat-window {
-    flex-grow: 1;
-    min-height: 200px;
-    padding-bottom: 12rem;
-    overflow-y: auto;
-  } */
-
   .chat-window {
     max-height: calc(100vh - 280px); /* adjust based on header/footer */
     overflow-y: auto;

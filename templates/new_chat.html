@@ -120,9 +120,12 @@ document.addEventListener("DOMContentLoaded", () => {
     </div>
 
     <div class="chat-window" id="chatWindow">
-      <div id="typingIndicator" class="typing-indicator" style="display: none;">
-        💭 Chereena is thinking…
-      </div>
+      <!-- Messages will be dynamically inserted here -->
+    </div>
+    
+    <!-- ✅ Keep the indicator OUTSIDE the chatWindow -->
+    <div id="typingIndicator" class="typing-indicator" style="display: none;">
+      💭 Chereena is thinking…
     </div>
 
     <div id="chatForm" class="chatbar">
