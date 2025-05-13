@@ -23,6 +23,8 @@ from fastapi.responses import JSONResponse
 import tiktoken
 from pathlib import Path
 from load_docs import (extract_text_from_pdf, extract_text_from_docx, extract_text_from_xlsx, extract_text_from_txt)
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
 
 # Load environment variables
@@ -75,8 +77,11 @@ class MessageRequest(BaseModel):
 class AddDocsRequest(BaseModel):
     texts: list[str]
 
+# class AskRequest(BaseModel):
+#     query: str
+
 class AskRequest(BaseModel):
-    query: str
+    message: str
 
 
 def count_tokens(messages, model="gpt-4"):
@@ -130,28 +135,15 @@ async def stream_openai_response(messages):
 
 # Chat endpoint (streaming)
 from fastapi.responses import StreamingResponse
-@app.post("/chat", response_class=StreamingResponse)
-async def chat(request: MessageRequest):
-    messages = [
-        {"role": "system", "content": "You are a helpful assistant named Chereena that answers ITSMF questions. Use line breaks, numbered lists, or bullet points if applicable. Format your responses using markdown-like structure."},
-        {"role": "user", "content": request.message}
-    ]
-
-    def generate():
-        try:
-            response = openai.chat.completions.create(
-                model="gpt-4",
-                # messages=trim_messages_to_fit_token_limit(messages),
-                messages = truncate_messages(messages, max_tokens=6000),
-                stream=True
-            )
-            for chunk in response:
-                if chunk.choices[0].delta.content:
-                    yield chunk.choices[0].delta.content
-        except Exception as e:
-            yield f"⚠️ Server error: {str(e)}"
-
-    return StreamingResponse(generate(), media_type="text/plain")
+# @app.post("/chat")
+# async def chat(request: MessageRequest):
+#     if not request.message:
+#         raise HTTPException(400, "No message provided")
+#     messages = [
+#         {"role": "system", "content": itsmf_prompt},
+#         {"role": "user",   "content": request.message}
+#     ]
+#     return StreamingResponse(stream(messages), media_type="text/event-stream")
 
 
 # New Chat Window
@@ -186,7 +178,8 @@ async def add_docs(request: AddDocsRequest):
 @app.post("/ask")
 async def ask_with_rag(request: AskRequest):
     try:
-        query = request.query
+        # query = request.query
+        query = request.message
         context_docs = query_similar_documents(query)
 
 

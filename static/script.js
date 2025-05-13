@@ -71,12 +71,13 @@ async function sendMessage(optionalMessage = null) {
   
 
   try {
-    // const response = await fetch("/chat", {
+      // const response = await fetch("/chat", {
       const response = await fetch("/ask", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       // body: JSON.stringify({ message }),
-      body: JSON.stringify({ query: message }),
+      //body: JSON.stringify({ query: message }),
+      body: JSON.stringify({ message: message }),
     });
 
     if (!response.ok || !response.body) {
@@ -228,18 +229,26 @@ document.addEventListener("click", function (e) {
   }
 });
 
-document.getElementById("uploadForm").addEventListener("submit", async function (e) {
-  e.preventDefault();  // <-- This prevents "Method Not Allowed"
-  const formData = new FormData(this);
-  
-  const response = await fetch("/upload-doc", {
-    method: "POST",
-    body: formData,
-  });
+// Option A: classic check
+const uploadForm = document.getElementById("uploadForm");
+if (uploadForm) {
+  uploadForm.addEventListener("submit", async function (e) {
+    e.preventDefault();                         // don’t forget this
+    const formData = new FormData(this);
 
-  const result = await response.json();
-  document.getElementById("uploadStatus").innerText = result.message || result.error;
-});
+    try {
+      const response = await fetch("/upload-doc", {
+        method: "POST",
+        body: formData,
+      });
+      const result = await response.json();
+      const statusEl = document.getElementById("uploadStatus");
+      if (statusEl) statusEl.innerText = result.message || result.error;
+    } catch (err) {
+      console.error("Upload failed:", err);
+    }
+  }); // closes addEventListener
+}    // closes the if(uploadForm)
 
 window.addEventListener("load", () => {
   const chatWindow = document.getElementById("chatWindow");
