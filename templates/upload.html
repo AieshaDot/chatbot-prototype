@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Upload Documents to Chereena</title>
+  <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico" />
 </head>
 <body>
   <h1>Upload Knowledge Documents</h1>
@@ -14,15 +15,22 @@
   <div id="uploadStatus"></div>
 
   <script>
-    document.getElementById("uploadForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const fileInput = document.querySelector("input[name='file']");
-      const file = fileInput.files[0];
-      if (!file) return alert("Select a file first.");
+  document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-      const formData = new FormData();
-      formData.append("file", file);
+    const form = document.getElementById("uploadForm");
+    const fileInput = form.querySelector("input[name='file']");
+    const file = fileInput.files[0];
 
+    if (!file) {
+      alert("Select a file first.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
       const res = await fetch("/upload-doc", {
         method: "POST",
         body: formData,
@@ -31,30 +39,14 @@
       const result = await res.json();
       document.getElementById("uploadStatus").innerText =
         result.message || result.error || "Unknown response";
-    });
 
-  
-    document.getElementById("uploadForm").addEventListener("submit", async (e) => {
-      e.preventDefault();  // 🔥 THIS IS CRUCIAL
-
-      const fileInput = document.getElementById("file");
-      const file = fileInput.files[0];
-      if (!file) {
-        alert("Please select a file");
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch("/upload-doc", {
-        method: "POST",
-        body: formData,
-      });
-
-      const result = await response.json();
-      alert(result.message || result.error);
-    });
+      // ✅ Reset the form after upload
+      form.reset();
+    } catch (err) {
+      console.error("❌ Upload failed:", err);
+      document.getElementById("uploadStatus").innerText = "❌ Upload failed.";
+    }
+  });
   </script>
 </body>
 </html>

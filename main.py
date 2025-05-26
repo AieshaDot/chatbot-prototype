@@ -196,6 +196,8 @@ async def ask(request: Request):
         system_prompt = Path("itsmf_instructions.txt").read_text().strip()
         docs = retriever.get_relevant_documents(query)
         context = "\n\n".join(doc.page_content for doc in docs)
+        for doc in docs:
+            print(f"📄 Source: {doc.metadata.get('source', '❌ no source')}, Content: {doc.page_content[:100]}")
 
         messages = [
             {"role": "system", "content": system_prompt},
@@ -229,26 +231,21 @@ import os
 import shutil
 from vector_store import add_documents
 
+from load_docs import load_and_index_file  # ✅ Make sure this is at the top
+
 @app.post("/upload-doc")
-async def upload_document(file: UploadFile = File(...)):
+async def upload_doc(file: UploadFile = File(...)):
+    file_location = f"uploaded_files/{file.filename}"
+    with open(file_location, "wb") as f:
+        f.write(await file.read())
+
+    # ✅ Embed the uploaded file into Chroma vector store
     try:
-        # ✅ Save uploaded file to a temp directory (needed for TextLoader)
-        os.makedirs("uploaded_files", exist_ok=True)
-        temp_path = os.path.join("uploaded_files", file.filename)
-
-        with open(temp_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-
-        # ✅ Pass filepath instead of raw text to add_documents
-        added_count = add_documents(temp_path)
-
-        # Optional: Clean up temp file afterward
-        # os.remove(temp_path)
-
-        return {"message": f"✅ Uploaded and added {added_count} chunks from {file.filename}"}
-
+        chunk_count = load_and_index_file(file_location)
+        return {"message": f"✅ Uploaded and added {chunk_count} chunks from {file.filename}"}
     except Exception as e:
-        print("❌ Upload failed:", e)
+        import traceback
+        print("🔥 Upload failed:", traceback.format_exc())
         return {"error": str(e)}
 
 
@@ -300,3 +297,56 @@ async def list_uploaded_filenames():
     except Exception as e:
         print("❌ Error fetching filenames:", e)
         return JSONResponse(status_code=500, content={"error": str(e)})
+    
+
+from fastapi.responses import JSONResponse
+
+@app.get("/list-docs")
+def list_documents():
+    try:
+        from vector_store import get_vectorstore
+        vs = get_vectorstore()
+        all_docs = vs._collection.get(include=["metadatas", "documents"])
+        return {"documents": all_docs}
+    except Exception as e:
+        import traceback
+        print("🔥 Error in /list-docs:", traceback.format_exc())
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e)}
+        )
+
+
+from pydantic import BaseModel
+from typing import List
+
+class DeleteRequest(BaseModel):
+    sources: List[str]
+
+@app.post("/delete-docs")
+def delete_documents(payload: DeleteRequest):
+    from vector_store import get_vectorstore
+    vs = get_vectorstore()
+
+    collection = vs._collection.get(include=["metadatas"])
+    all_ids = vs._collection.get()["ids"]  # ✅ fix here
+
+    ids_to_delete = [
+        all_ids[i]
+        for i, meta in enumerate(collection["metadatas"])
+        if meta.get("source") in payload.sources
+    ]
+
+    vs._collection.delete(ids=ids_to_delete)
+    return {"deleted_count": len(ids_to_delete)}
+
+@app.get("/manage-docs", response_class=HTMLResponse)
+def manage_docs(request: Request):
+    return templates.TemplateResponse("manage_docs.html", {"request": request})
+
+@app.post("/purge-vector-db")
+def purge_vector_db():
+    from vector_store import get_vectorstore
+    vs = get_vectorstore()
+    vs._collection.delete(where={"source": {"$ne": ""}})
+    return {"message": "✅ Vector database purged."}

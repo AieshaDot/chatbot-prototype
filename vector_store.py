@@ -7,7 +7,7 @@ from typing import List
 import os
 
 # 👇 Your persisted directory and custom collection
-persist_directory = "db"
+PERSIST_DIR = "chroma_db"
 collection_name = "itsmf_docs"
 
 # 👇 Embedding function
@@ -16,7 +16,7 @@ embedding = OpenAIEmbeddings()
 # 👇 Vector DB instance (with collection name preserved)
 vectordb = Chroma(
     collection_name=collection_name,
-    persist_directory=persist_directory,
+    persist_directory=PERSIST_DIR,
     embedding_function=embedding
 )
 
@@ -95,3 +95,11 @@ def query_similar_documents(query: str, k: int = 4) -> List[Document]:
     return vectordb.similarity_search(query, k=k)
 
 vectorstore = vectordb 
+from langchain_community.vectorstores import Chroma
+from langchain_community.embeddings import OpenAIEmbeddings
+
+def get_vectorstore():
+    return Chroma(
+        persist_directory=PERSIST_DIR,
+        embedding_function=OpenAIEmbeddings()
+    )

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Manage Vector Store Documents</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .doc-list {
+      margin-top: 1rem;
+      max-width: 600px;
+    }
+
+    .doc-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .doc-item label {
+      flex: 1;
+      overflow-wrap: anywhere;
+    }
+
+    button {
+      margin-top: 1.5rem;
+      padding: 0.5rem 1rem;
+      background-color: #d62828;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #a61b1b;
+    }
+
+    #status {
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>📂 Manage Vector Documents</h1>
+  <div class="doc-list" id="docList">
+    Loading documents...
+  </div>
+  <button onclick="deleteSelected()">🗑 Delete Selected</button>
+  <div id="status"></div>
+  <button onclick="purgeDB()">🚨 Purge All Data</button>
+
+  <script>
+    async function fetchDocs() {
+      const res = await fetch("/list-docs");
+      const data = await res.json();
+
+      const docList = document.getElementById("docList");
+      docList.innerHTML = "";
+
+      const seen = new Set();
+      data.documents.metadatas.forEach((meta, index) => {
+        const source = meta?.source || `Unknown [${index}]`;
+        if (!seen.has(source)) {
+          seen.add(source);
+          const div = document.createElement("div");
+          div.classList.add("doc-item");
+          div.innerHTML = `
+            <input type="checkbox" value="${source}">
+            <label>${source}</label>
+          `;
+          docList.appendChild(div);
+        }
+      });
+
+      if (seen.size === 0) {
+        docList.innerHTML = "No documents found in vector store.";
+      }
+    }
+
+    
+    async function deleteSelected() {
+    const checkboxes = document.querySelectorAll("input[type='checkbox']:checked");
+    const sources = Array.from(checkboxes).map(cb => cb.value);
+
+    if (sources.length === 0) {
+     alert("Please select at least one document to delete.");
+     return;
+    }
+
+    console.log("🧪 Selected sources:", sources);
+
+    try {
+    const res = await fetch("/delete-docs", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ sources })
+    });
+
+    let result;
+    const text = await res.text();
+
+    try {
+        result = JSON.parse(text); // Try parsing if it’s valid JSON
+    } catch {
+        throw new Error(text);     // Otherwise use the raw error text
+    }
+
+    if (!res.ok) {
+        throw new Error(result.error || "Unknown error");
+    }
+
+    document.getElementById("status").innerText = `✅ Deleted ${sources.length} document chunks.`;
+    fetchDocs(); // Reload document list
+    } catch (err) {
+    console.error("❌ Deletion failed:", err);
+    document.getElementById("status").innerText = `❌ Error: ${err.message}`;
+    }
+}
+    
+    window.addEventListener("DOMContentLoaded", fetchDocs);
+
+    async function purgeDB() {
+    if (!confirm("Are you sure? This will delete ALL documents from the vector DB.")) return;
+
+    const res = await fetch("/purge-vector-db", { method: "POST" });
+    const result = await res.json();
+    document.getElementById("status").innerText = result.message || "Purge complete.";
+    fetchDocs();  // refresh the list
+  }
+
+  </script>
+</body>
+</html>

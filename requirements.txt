@@ -31,3 +31,4 @@ unstructured
 pdfminer.six
 beautifulsoup4
 networkx
+unstructured[pdf]
