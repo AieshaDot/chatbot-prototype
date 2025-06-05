@@ -193,11 +193,23 @@ async def ask(request: Request):
         return JSONResponse({"error": "Missing 'message' field"}, status_code=400)
 
     try:
+        from vector_store import get_vectorstore
+        vs = get_vectorstore()
         system_prompt = Path("itsmf_instructions.txt").read_text().strip()
-        docs = retriever.get_relevant_documents(query)
+        # print("system_prompt:", system_prompt)
+        # if not system_prompt:
+            # return {"response": "Sorry, I couldn’t find any relevant information in our systen prompt."}
+        # print(f"🔍 Query: {query}")
+        retriever = vs.as_retriever(search_type="similarity", search_kwargs={"k": 10})
+        # docs = retriever.get_relevant_documents(query)
+        docs = retriever.invoke(query)
+        if not docs:
+            return {"response": "Sorry, I couldn’t find any relevant information in our documents."}
+        else:
+            print(f"🧠 Retrieved {len(docs)} document(s)")
         context = "\n\n".join(doc.page_content for doc in docs)
-        for doc in docs:
-            print(f"📄 Source: {doc.metadata.get('source', '❌ no source')}, Content: {doc.page_content[:100]}")
+        # for doc in docs:
+        #    print(f"📄 Source: {doc.metadata.get('source', '❌ no source')}, Content: {doc.page_content[:100]}")
 
         messages = [
             {"role": "system", "content": system_prompt},

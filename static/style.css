@@ -46,7 +46,8 @@ body.home-wrapper > .app-wrapper {
 
 .home-wrapper .new-chat {
   background-color: #f4a261;
-  color: white;
+  /* color: white; */
+  color: black;
   border: none;
   padding: 0.6rem 1rem;
   font-size: 14px;
