@@ -1,0 +1,52 @@
+<!-- templates/upload.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Upload Documents to Chereena</title>
+  <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico" />
+</head>
+<body>
+  <h1>Upload Knowledge Documents</h1>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".pdf,.docx,.xlsx,.txt,.csv,.html" />
+    <button type="submit">Upload</button>
+  </form>
+  <div id="uploadStatus"></div>
+
+  <script>
+  document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const form = document.getElementById("uploadForm");
+    const fileInput = form.querySelector("input[name='file']");
+    const file = fileInput.files[0];
+
+    if (!file) {
+      alert("Select a file first.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/upload-doc", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await res.json();
+      document.getElementById("uploadStatus").innerText =
+        result.message || result.error || "Unknown response";
+
+      // ✅ Reset the form after upload
+      form.reset();
+    } catch (err) {
+      console.error("❌ Upload failed:", err);
+      document.getElementById("uploadStatus").innerText = "❌ Upload failed.";
+    }
+  });
+  </script>
+</body>
+</html>

@@ -6,6 +6,8 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Chereena Chatbot</title>
 <link href="../static/style.css" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="icon" type="image/x-icon" href="/static/images/favicon.ico" />
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
   .home-wrapper {
@@ -14,7 +16,7 @@
 </style>
 </head>
 <body class="home-wrapper">
-
+  <button id="hamburger" class="hamburger-btn" aria-label="Toggle menu">☰</button>
 <script>
 function toggleDarkMode() {
   const body = document.body;
@@ -25,6 +27,8 @@ function toggleDarkMode() {
   const iconMoonSun = document.getElementById("darkModeIcon");
   const iconCanTrash = document.getElementById("trashCanIcon");
   const iconExternal = document.getElementById("externalLinkIcon");
+  const topIcon = document.getElementById("itsmf-header-logo-top");
+  const chereenaIcon = document.getElementById("itsmf-Chereena-top");
 
   // Update link text
   link.textContent = isDark ? "Light Mode" : "Dark Mode";
@@ -33,6 +37,15 @@ function toggleDarkMode() {
   logo.src = isDark
     ? "../static/images/itsmf_technology_logo-dark.png"
     : "../static/images/itsmf_technology_logo.png";
+
+  topIcon.src = isDark
+    ? "../static/images/itsmf_cc2_logo-horiz_white.png"
+    : "../static/images/itsmf_cc2_logo-horiz_color.png";
+
+    chereenaIcon.src = isDark
+    ? "../static/images/chereena_light.png"
+    : "../static/images/NewChatButton.png";
+
 
   // Swap dark/light mode icon
   iconMoonSun.src = isDark
@@ -92,8 +105,7 @@ function toggleDarkMode() {
     });
   });
 </script>
-<script src="../static/script.js"></script>
-
+<script defer src="../static/script.js"></script>
 <!-- Modal container (place this just before </body>) -->
 <div class="modal" id="imageModal">
 <div class="modal-content-wrapper">
@@ -101,11 +113,12 @@ function toggleDarkMode() {
 <img alt="Emerge Cohort 2025" class="modal-image" src="../static/images/EmergeWG22025.jpeg"/>
 </div>
 </div>
-<div class="app-wrapper">
 <div class="sidebar">
+  <!-- <div class="sidebar-top"> -->
 <button class="new-chat" onclick="window.location.href='/new_chat'">📝 New Chat</button>
+<!-- </div> -->
 <div class="sidebar-bottom">
-<img alt="ITSMF logo" id="itsmfLogo" src="../static/images/itsmf_technology_logo.png" style="width: 213px; height: 32px;"/>
+  <img id="itsmfLogo" src="../static/images/itsmf_technology_logo.png"  onclick="window.location.href='https://itsmfleaders.org/'" style="width: 213px; height: 32px;" alt="ITSMF logo" />
 <hr style="border: none; border-top: 1px solid #ddd; margin: 10px 0;"/>
 <div class="menu-item">
 <img alt="Trash Can Icon" class="icon" id="trashCanIcon" src="../static/images/trashcan_icon.png"/>
@@ -121,15 +134,22 @@ function toggleDarkMode() {
 </div>
 </div>
 </div>
+<div class="app-wrapper">
 <div class="main">
-<div class="topbar">
-<span class="logo">Chereena 2.0 ⌄</span>
-<img alt="ITSMF Logo" src="../static/images/ITSMF_Logo_Icon_Color.png"/>
-<div class="auth-buttons">
-<button>Login</button>
-<button>Sign Up</button>
-</div>
-</div>
+  <div class="topbar">
+    <div class="topbar-left">
+      <img class="logo" src="../static/images/NewChatButton.png" alt="Chereena 2.0" id="itsmf-Chereena-top"/>
+    </div>
+  
+    <div class="topbar-center">
+      <img class="itsmf-header-logo" src="../static/images/itsmf_cc2_logo-horiz_color.png" alt="ITSMF Logo" onclick="window.location.href='/'" id="itsmf-header-logo-top">
+    </div>
+  
+    <div class="topbar-right auth-buttons">
+      <button>Login</button>
+      <button>Sign Up</button>
+    </div>
+  </div>
 <div class="header">
   <div class="profile-header">
   <img alt="Chereena" src="../static/images/Chereena Profile Picture Ai.png"/>
@@ -138,27 +158,37 @@ function toggleDarkMode() {
 <p>Chereena is a RAG-powered chatbot that answers Information Technology Senior Management Forum (ITSMF)-related questions and inquiries.</p>
 </div>
 </div>
+
 <div class="section">
 <div class="column">
-<h3>📖 Academies</h3>
+ <h3><img src="../static/images/chats.png/" style="width: 30px; height: 30px;" /> </h3>
+ <h3>Academies</h3>
 <div class="question">What ITSMF programs are available for women?</div>
-<div class="question">What’s the difference between the academies and other programs hosted by ITSMF?</div>
+<div class="question">What is the difference between the academies and other programs hosted by ITSMF?</div>
 </div>
 <div class="column">
-<h3>📅 Membership</h3>
+<h3><img src="../static/images/shield warning.png" style="width: 30px; height: 30px;" /> </h3>
+<h3>Membership</h3>
 <div class="question">What are the different membership options?</div>
 <div class="question">How frequent are membership dues and what do they go towards?</div>
 </div>
 <div class="column">
-<h3>🌟 Symposiums</h3>
+<h3><img src="../static/images/star.png" style="width: 30px; height: 30px;" /> </h3>
+<h3>Symposiums</h3>
 <div class="question">What sponsorship opportunities exist and how do I apply to be a sponsor?</div>
 <div class="question">What are the various ITSMF initiatives I can sponsor?</div>
 </div>
 </div>
+
+
 <div class="chat-window" id="chatWindow">
-  <div id="typingIndicator" class="typing-indicator" style="display: none;">
-    💭 Chereena is thinking…
-  </div>
+  <!-- Messages will be dynamically inserted here -->
+</div>
+
+<!-- ✅ Keep the indicator OUTSIDE the chatWindow -->
+<div id="typingIndicator" class="typing-indicator" style="display: none;">
+  💭 Chereena is thinking…
+</div>
 </div>
 </div>
 <div class="chatbar">
@@ -167,11 +197,30 @@ function toggleDarkMode() {
   </div>
   <div class="chat-footer">
   <p>
-          By messaging Chereena, you agree to our 
-          <a href="/privacy-policy">Terms</a>  and have read our 
+          By messaging Chereena, you confirmed you have read our 
           <a href="/privacy-policy">Privacy Policy.</a>
   </p>
   </div>
 </div>
+<div id="sidebarOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.3); z-index:999;"></div>
 </body>
+<script>
+  // Force scroll to bottom after load
+  window.addEventListener("load", () => {
+    setTimeout(() => {
+      const chatWindow = document.getElementById("chatWindow");
+      if (chatWindow) {
+        chatWindow.scrollTo({ top: chatWindow.scrollHeight, behavior: "smooth" });
+      }
+    }, 600); // Wait a bit for content to render
+  });
+  setTimeout(() => {
+    const el = document.getElementById("chatWindow");
+    if (el) {
+      el.style.height = "calc(100vh - 300px)";
+      el.style.overflowY = "auto";
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    }
+  }, 1000);
+</script>
 </html>
